@@ -1,0 +1,54 @@
+USE [DataWarehouse]
+GO
+
+/****** Object:  Table [ods].[ODST003_DealsInterest]    Script Date: 04/01/2009 09:48:36 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+SET ANSI_PADDING ON
+GO
+
+CREATE TABLE [ods].[ODST003_DealsInterest](
+	[Cdealtype] [char](3) NULL,
+	[Cdealreference] [char](13) NULL,
+	[Itermdealtype] [char](1) NULL,
+	[Cdealaccbranch] [char](6) NULL,
+	[Cdealaccbasicnumb] [char](6) NULL,
+	[Cdealaccsuffix] [char](3) NULL,
+	[Idealinterestchar] [char](1) NULL,
+	[Cdealcurrency] [char](3) NULL,
+	[Cdealaccounttype] [char](3) NULL,
+	[Cintaccbranch] [char](4) NULL,
+	[Cintaccbasicnumb] [char](6) NULL,
+	[Cintaccsuffix] [char](3) NULL,
+	[Dmaturitydate] [decimal](7, 0) NULL,
+	[Cinterestfreq] [char](3) NULL,
+	[Dlastinterestcycl] [decimal](7, 0) NULL,
+	[Dnextinterestcycl] [decimal](7, 0) NULL,
+	[Creviewfrequency] [char](3) NULL,
+	[Dlastrolloverdate] [decimal](7, 0) NULL,
+	[Dnextrolloverdate] [decimal](7, 0) NULL,
+	[Vintnextbusday] [decimal](15, 0) NULL,
+	[Vintnextcycldate] [decimal](15, 0) NULL,
+	[Vintprof] [decimal](17, 3) NULL,
+	[Vintprofnextbusd] [decimal](17, 3) NULL,
+	[Vintnxtpernxtbusd] [decimal](17, 3) NULL,
+	[Cbaseratecode] [char](2) NULL,
+	[Cdiffratecode] [char](2) NULL,
+	[Vactualrate] [decimal](11, 7) NULL,
+	[Vactualmarginrate] [decimal](11, 7) NULL,
+	[Vspreadrate] [decimal](11, 7) NULL,
+	[Fintratepegged] [char](1) NULL,
+	[Fextradaysint] [char](1) NULL,
+	[Dlastmaintained] [decimal](7, 0) NULL
+) ON [PRIMARY]
+
+GO
+
+SET ANSI_PADDING OFF
+GO
+
+
