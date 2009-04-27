@@ -10,6 +10,17 @@ class Ods2Dw(object):
     _files = list()
     _ODSViewTemplate = 'createODSVTemplate.sql'
     _DWViewTemplate = 'createDWVTemplate.sql'
+    _SP_PopulateDWTTemplate = 'SP_PopulateDWTTemplate.sql'
+
+    _table_name, _ods_columns = '', ''
+
+    def _get_dw_columns(self):
+        if self._ods_columns != '':
+            return self._ods_columns + '\t[Dbatchdate]\n'
+        else:
+            return ''
+     
+    _dw_columns = property(_get_dw_columns)    
 
     def __init__(self, files=None, rules=None):
         """
@@ -33,14 +44,14 @@ class Ods2Dw(object):
         for rule in rules:
             self._rules.append(rule)
 
-    def replaceLines(self):
+    def createDWTable(self):
         for file in self._files:
             newlines = ''
             fd = open(file, 'r')
             for line in fd.readlines():
                 for rule in self._rules:
                     if rule[0].search(line):
-                        line= re.sub(rule[1], rule[2], line)
+                        line = re.sub(rule[1], rule[2], line)
                         break
                 newlines += line
             fd.close()
@@ -53,8 +64,6 @@ class Ods2Dw(object):
             fd.close()
 
     def createODSView(self):
-        table_name = ''
-        columns = ''
         odsTemplate = open(self._ODSViewTemplate, 'r').read()
         
         for file in self._files:
@@ -67,21 +76,47 @@ class Ods2Dw(object):
                 else: # searching for columns
                     matchColumn = re.match(odscolumns, line)
                     if matchColumn != None: # found column
-                        columns = columns + '\t' + matchColumn.group(1) + ',\n'
+                        self._ods_columns = self._ods_columns + '\t' \
+                            + matchColumn.group(1) + ',\n'
                     else: # no more columns
                         break
 
-            table_name = matchTable.group(1)
-
+            self._table_name = matchTable.group(1)
             fd.close()
-            table_name = matchTable.group(1)
-            newview = odsTemplate % {'tablename': table_name,
-                                     'columns': columns}
-            fdv = open('createODSV%s.sql' % (table_name), 'w')
+            newview = odsTemplate % {'tablename': self._table_name,
+                                     'columns': self._ods_columns}
+            fdv = open('createODSV%s.sql' % (self._table_name), 'w')
             fdv.write(newview)
             fdv.close()
 
-odstablename = r"^CREATE TABLE \[ods\]\.\[ODST([0-9]{3}\_[a-zA-Z0-9]+)\]"
+    def createSP_PopulateDWTable(self):
+        spTemplate = open(self._SP_PopulateDWTTemplate, 'r').read()
+
+        for file in self._files:
+            fd = open(file, 'r')
+            matchTable = None
+            matchColumn = None
+            for line in fd.readlines():
+                if matchTable == None: # found table name
+                    matchTable = re.match(odstablename, line)
+                else: # searching for columns
+                    matchColumn = re.match(odscolumns, line)
+                    if matchColumn != None: # found column
+                        self._ods_columns = self._ods_columns + '\t' \
+                            + matchColumn.group(1) + ',\n'
+                    else: # no more columns
+                        break
+
+            fd.close()
+            self._table_name = matchTable.group(1)
+            newsp = spTemplate % {'table_name': self._table_name,
+                                  'columns': self._dw_columns}
+            fdsp = open('SP_PopulateDWT%s.sql' % (self._table_name), 'w')
+            fdsp.write(newsp)
+            fdsp.close()
+
+
+odstablename = r"CREATE TABLE \[ods\]\.\[ODST([0-9]{3}\_[a-zA-Z0-9]+)\]"
 odscolumns = r"\t(\[[CDFGIV][a-z0-9]+\]).* NULL"
 
 ods2dw_changes = [
@@ -97,6 +132,9 @@ ods2dw_changes = [
     ('[ \t\.a-zA-Z0-9]*\[ods\]\.\[ODS',
      '\[ods\]\.\[ODS',
      '[dw].[DW'),
+    ('^[ \t]*\)[ \t]*ON[ \t]*\[PRIMARY\][ \t]*$',
+     '\)[ \t]*ON',
+     '\t,[Dbatchdate] [datetime] NULL\n) ON'),
 ]
 
 
@@ -104,17 +142,21 @@ def insertRules(inst, rules):
     for rule in rules:
         inst.addRule(rule[0], rule[1], rule[2])
 
-def createDWtable():
+def createDWTable():
     dw = Ods2Dw()    
     dw.addFile('tableODS.sql')
     insertRules(dw, ods2dw_changes)
-    dw.replaceLines()
+    dw.createDWTable()
 
 def createODSView():
     dw = Ods2Dw()
     dw.addFile('tableODS.sql')
     dw.createODSView()
-    
+
+def createSP():
+    dw = Ods2Dw()
+    dw.addFile('tableODS.sql')
+    dw.createSP_PopulateDWTable()
 
 if __name__ == '__main__':
     pass
