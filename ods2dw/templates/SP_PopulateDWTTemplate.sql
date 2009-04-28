@@ -15,10 +15,10 @@ create procedure populate_DWT%(table_name)s
 as
 begin
 
-INSERT INTO [DataWarehouse].[dw].[DWT$(table_name)s](
+INSERT INTO [DataWarehouse].[dw].[DWT%(table_name)s](
        %(columns)s
 )
-SELECT 
+SELECT
        %(columns)s
 FROM [DataWarehouse].[ods].[ODSV%(table_name)s]
 

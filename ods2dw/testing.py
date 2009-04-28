@@ -12,26 +12,22 @@ class TestFunctions(unittest.TestCase):
         for rule in rules:
             inst.addRule(rule[0], rule[1], rule[2])
 
+    def setUp(self):
+        self.dw = ods2dw.Ods2Dw()
+        self.dw.addFile('tableODS.sql')
+
     def testCreateDWTable(self):
-        dw = ods2dw.Ods2Dw()
-        dw.addFile('tableODS.sql')
-        self.insertRules(dw, ods2dw.ods2dw_changes)
-        dw.createDWTable()
+        self.insertRules(self.dw, ods2dw.ods2dw_changes)
+        self.dw.createDWTable()
 
     def testCreateODSView(self):
-        dw = ods2dw.Ods2Dw()
-        dw.addFile('tableODS.sql')
-        dw.createODSView()
+        self.dw.createODSView()
 
     def testCreateSP(self):
-        dw = ods2dw.Ods2Dw()
-        dw.addFile('tableODS.sql')
-        dw.createSP_PopulateDWTable()
+        self.dw.createSP_PopulateDWTable()
 
     def testCreateDWView(self):
-        dw = ods2dw.Ods2Dw()
-        dw.addFile('tableODS.sql')
-        dw.createDWView()
+        self.dw.createDWView()
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(TestFunctions)

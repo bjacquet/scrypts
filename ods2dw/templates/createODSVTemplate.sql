@@ -1,7 +1,7 @@
-create view [dw].[DWV%(tablename)s]
+create view [ods].[ODSV%(tablename)s]
 AS
 SELECT
 	%(columns)s
-from [dw].[DWT%(tablename)s] t1
-     inner join [dw].[DWT000_SP] t2	
-     	   on t1.[Dbatchdate] = t2.[Dbatchdate]
+	t2.[Dbatchdate]
+from [ods].[ODST%(tablename)s] t1
+     cross join [dw].[DWT000_SP] t2
