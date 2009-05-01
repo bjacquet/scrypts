@@ -1,3 +1,18 @@
+/**
+Description:
+	Splits a given string into words.
+Arguments:
+	@Keyword varchar(8000) - the string to be splited
+	@Delimiter varchar(255) - delimiter to split the string into words
+Return Value:
+	@SplitKeyword - splited words table
+Author & Date:
+	Bruno Jacquet 02.2009
+*/
+if OBJECT_ID('dbo.f_Split', 'FN') is not null
+	drop function f_Split
+go
+
 CREATE FUNCTION f_Split
 (
  @Keyword VARCHAR(8000),
