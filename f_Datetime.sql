@@ -1,12 +1,16 @@
 /**
 Description:
-	
+	Converts a date from a char(7) type to a Datetime type.
+
+	The expected date must come in the following format "Myymmdd" where 'M' 
+represents the Millennium, 'yy' the last two digits of the year, 'mm' for month 
+and 'dd' for day.
 Arguments:
-	none
+	@Date char(7) - date value to be converted to Datetime
 Return Value:
-	none
+	@realdate Datetime - converted date
 Author & Date:
-	Bruno Jacquet 02.2009	
+	Bruno Jacquet 02.2009
 */
 if OBJECT_ID('dbo.f_Datetime', 'FN') is not null
 	drop function f_Datetime
