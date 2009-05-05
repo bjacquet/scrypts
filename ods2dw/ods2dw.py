@@ -1,17 +1,23 @@
 import re
 import string
+import sys
 import ConfigParser
 
 class Ods2Dw(object):
     """
     """
+    _files = list()
+    _rules = list()
 
     def __init__(self, files=None, rules=None):
         self._config = ConfigParser.ConfigParser()
         self._config.read('ods2dw.cfg')
 
-        self._rules = list()
-        self._files = list()
+        if files != None:
+            self.addFiles(files)
+        if rules != None:
+            self.addRules(rules)
+
         self._ODSViewTemplate = self._config.get('Template', 'odsview')
         self._DWViewTemplate = self._config.get('Template', 'dwview')
         self._SP_PopulateDWTTemplate = self._config.get('Template', 'dwsp')
@@ -25,11 +31,15 @@ class Ods2Dw(object):
     _dw_columns = property(_get_dw_columns)
     _table_name, _ods_columns = '', ''
 
-    def addFile(self, *files):
+
+    def addFile(self, file):
+        self._files.append(file)
+
+    def addFiles(self, files):
         for file in files:
-            self._files.append(file)
+            self.addFile(file)
     
-    def removeFile(self, *files):
+    def removeFile(self, files):
         for file in files:
             self._files.remove(file)
 
@@ -39,30 +49,9 @@ class Ods2Dw(object):
     def addRule(self, pattern, old, new):
         self._rules.append((re.compile(pattern), old, new))
 
-    def addRules(self, *rules):
+    def addRules(self, rules):
         for rule in rules:
-            self._rules.append(rule)
-
-    def createDWTable(self):
-        dwtfilename = self._config.get('Filename', 'dwtable', 1)
-        for file in self._files:
-            newlines = ''
-            matchTable = None
-            fd = open(file, 'r')
-            for line in fd.readlines():
-                if matchTable == None: # found table name
-                    matchTable = re.match(odstablename, line)
-                for rule in self._rules:
-                    if rule[0].search(line):
-                        line = re.sub(rule[1], rule[2], line)
-                        break
-                newlines += line
-
-            self._table_name = matchTable.group(1)
-            fd.close()
-            fd = open(dwtfilename % (self._table_name), 'w')
-            fd.write(newlines)
-            fd.close()
+            self.addRule(rule[0], rule[1], rule[2])
 
     def createODSView(self):
         odsTemplate = open(self._ODSViewTemplate, 'r').read()
@@ -90,6 +79,27 @@ class Ods2Dw(object):
             fdv = open(odsvfilename % (self._table_name), 'w')
             fdv.write(newview)
             fdv.close()
+
+    def createDWTable(self):
+        dwtfilename = self._config.get('Filename', 'dwtable', 1)
+        for file in self._files:
+            newlines = ''
+            matchTable = None
+            fd = open(file, 'r')
+            for line in fd.readlines():
+                if matchTable == None: # found table name
+                    matchTable = re.match(odstablename, line)
+                for rule in self._rules:
+                    if rule[0].search(line):
+                        line = re.sub(rule[1], rule[2], line)
+                        break
+                newlines += line
+
+            self._table_name = matchTable.group(1)
+            fd.close()
+            fd = open(dwtfilename % (self._table_name), 'w')
+            fd.write(newlines)
+            fd.close()
 
     def createSP_PopulateDWTable(self):
         spTemplate = open(self._SP_PopulateDWTTemplate, 'r').read()
@@ -197,4 +207,9 @@ dw_insert = [
 
 
 if __name__ == '__main__':
-    pass
+    changer = Ods2Dw(files=sys.argv[1:], rules=ods2dw_changes)
+    changer.createODSView()
+    changer.createDWTable()
+    changer.createSP_PopulateDWTable()
+    changer.createDWView()
+
