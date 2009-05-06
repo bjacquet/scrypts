@@ -16,10 +16,11 @@ as
 begin
 
 INSERT INTO [DataWarehouse].[dw].[DWT%(table_name)s](
-       %(columns)s
+       %(dw_columns)s
 )
 SELECT
-       %(columns)s
+       %(ods_columns)s
+       [Dbatchdate]
 FROM [DataWarehouse].[ods].[ODSV%(table_name)s]
 
 end
