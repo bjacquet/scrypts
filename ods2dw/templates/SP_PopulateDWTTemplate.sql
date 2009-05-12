@@ -1,5 +1,10 @@
 /**
 Description:
+	Generated files.
+
+	Creates a Stored Procedure that populates the table 
+[dw].[DWT%(tablename)s] with the return values of a SELECT query to the 
+[ods].[ODSV%(tablename)s] view.
 Arguments:
 	none
 Return Value:

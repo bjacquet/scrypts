@@ -1,3 +1,11 @@
+/**
+Description:
+	Generated file.
+
+	Creates a View for table DWT%(tablename)s of the [dw] schema.
+Author:
+	Bruno Jacquet 05.2009
+*/
 create view [dw].[DWV%(tablename)s]
 AS
 SELECT

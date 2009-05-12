@@ -1,3 +1,11 @@
+/**
+Description:
+	Generated file.
+
+	Creates a View for table ODST%(tablename)s of the [ods] schema.
+Author:
+	Bruno Jacquet 05.2009
+*/
 create view [ods].[ODSV%(tablename)s]
 AS
 SELECT
