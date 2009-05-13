@@ -172,16 +172,7 @@ class Ods2Dw(object):
         spTemplate = open(self._SP_PopulateDWTTemplate, 'r').read()
         spdwfilename = self._config.get('Filename', 'dwsp', 1)
 
-#         select = False
         ods_columns = ''
-#         for column in self._ods_columns.split():
-#             for columnType in dw_insert:
-#                 columnChange = re.match(columnType[0], column)
-#                 if columnChange != None:
-#                     column = columnType[1] % {'column': columnChange.group(1)}
-#                     break
-#             ods_columns = ods_columns + column + '\n'
-
         matchColumn = None
         for column in self._ods_col_descr:
             matchColumn = re.match(odscolumns, column)
