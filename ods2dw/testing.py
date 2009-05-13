@@ -6,18 +6,12 @@ import ods2dw
 
 
 class TestFunctions(unittest.TestCase):
-    
-
-    def insertRules(self, inst, rules):
-        for rule in rules:
-            inst.addRule(rule[0], rule[1], rule[2])
 
     def setUp(self):
-        self.dw = ods2dw.Ods2Dw()
-        self.dw.addFile('tableODS.sql')
+        self.dw = ods2dw.Ods2Dw(files=['sample.txt'],
+                                rules=ods2dw.ods2dw_changes)
 
     def testCreateDWTable(self):
-        self.insertRules(self.dw, ods2dw.ods2dw_changes)
         self.dw.createDWTable()
 
     def testCreateODSView(self):
