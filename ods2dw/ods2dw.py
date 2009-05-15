@@ -23,7 +23,7 @@ class Ods2Dw(object):
 
     def _get_dw_columns(self):
         if self._ods_columns != '':
-            return self._ods_columns + '\t[Dbatchdate]\n'
+            return self._ods_columns + '[Dbatchdate]'
         else:
             return ''
 
@@ -55,6 +55,14 @@ class Ods2Dw(object):
         for rule in rules:
             self.addRule(rule[0], rule[1], rule[2])
 
+    def generateFiles(self):
+        for file in self._files:
+            self.parseODSTable(file)
+            self.createODSView_2()
+            self.createDWTable_2()
+            self.createSP_PopulateDWTable_2()
+            self.createDWView_2()
+
     def parseODSTable(self, file):
         fd = open(file, 'r')
         matchTable = None
@@ -68,22 +76,14 @@ class Ods2Dw(object):
             else: # searching for columns
                 matchColumn = re.match(odscolumns, line)
                 if matchColumn != None: # found column
-                    self._ods_col_descr.append(line)
-                    self._ods_columns = self._ods_columns + '\t' \
+                    self._ods_col_descr.append(line.lstrip())
+                    self._ods_columns = self._ods_columns \
                         + matchColumn.group(1) + ',\n'
                 else: # no more columns
                     break
 
         self._table_name = matchTable.group(1)
         fd.close()
-
-    def generateFiles(self):
-        for file in self._files:
-            self.parseODSTable(file)
-            self.createODSView_2()
-            self.createDWTable_2()
-            self.createSP_PopulateDWTable_2()
-            self.createDWView_2()
 
     def createODSView_2(self):
         ods_view_columns = ''
@@ -98,7 +98,7 @@ class Ods2Dw(object):
         odsTemplate = open(self._ODSViewTemplate, 'r').read()
         odsvfilename = self._config.get('Filename', 'odsview', 1)
         newview = odsTemplate % {'tablename': self._table_name,
-                                 'columns': ods_view_columns}
+                                 'columns': ods_view_columns[:-1]}
         fd = open(odsvfilename % (self._table_name), 'w')
         fd.write(newview)
         fd.close()
@@ -142,7 +142,7 @@ class Ods2Dw(object):
         dwTemplate = open(self._DWTableTemplate, 'r').read() 
         dwtfilename = self._config.get('Filename', 'dwtable', 1)
         newtable = dwTemplate % {'tablename': self._table_name,
-                                 'columns': newcolumns}
+                                 'columns': newcolumns[:-1]}
         fd = open(dwtfilename % (self._table_name), 'w')
         fd.write(newtable)
         fd.close()
@@ -172,27 +172,17 @@ class Ods2Dw(object):
         spTemplate = open(self._SP_PopulateDWTTemplate, 'r').read()
         spdwfilename = self._config.get('Filename', 'dwsp', 1)
 
-#         select = False
         ods_columns = ''
-#         for column in self._ods_columns.split():
-#             for columnType in dw_insert:
-#                 columnChange = re.match(columnType[0], column)
-#                 if columnChange != None:
-#                     column = columnType[1] % {'column': columnChange.group(1)}
-#                     break
-#             ods_columns = ods_columns + column + '\n'
-
         matchColumn = None
         for column in self._ods_col_descr:
             matchColumn = re.match(odscolumns, column)
             if matchColumn != None:
                 ods_columns = ods_columns + matchColumn.group(1) \
-                    + ',\n\t'
-
+                    + ',\n'
 
         sp = spTemplate % {'table_name': self._table_name,
                            'dw_columns': self._dw_columns,
-                           'ods_columns': ods_columns}
+                           'ods_columns': ods_columns[:-1]}
 
         fdsp = open(spdwfilename % (self._table_name), 'w')
         fdsp.write(sp)
@@ -248,7 +238,7 @@ class Ods2Dw(object):
         dwTemplate = open(self._DWViewTemplate, 'r').read()
         dwvfilename = self._config.get('Filename', 'dwview', 1)
         newview = dwTemplate % {'tablename': self._table_name,
-                                'columns': self._ods_columns}
+                                'columns': self._ods_columns[:-1]}
         fd = open(dwvfilename % (self._table_name), 'w')
         fd.write(newview)
         fd.close()
@@ -282,7 +272,7 @@ class Ods2Dw(object):
 
 
 odstablename = r"CREATE TABLE \[ods\]\.\[ODST([0-9]{3}\_[a-zA-Z0-9]+)\]"
-odscolumns = r"\t(\[([CDFGIV][a-z0-9]+|S[A-Z0-9]+)\]).* NULL"
+odscolumns = r"\t?(\[([CDFGIV][a-z0-9]+|S[A-Z0-9]+)\]).* NULL"
 
 ods2dw_changes = [
     ('^[ \t]*\[G[a-zA-Z0-9]*\]\ *\[char\]', 
@@ -305,11 +295,11 @@ ods2dw_changes = [
 
 dw_insert = [
     ('^[ \t]*(\[G[a-zA-Z0-9]+\]),$',
-     '\trtrim(ltrim(%(column)s)) as %(column)s,'),
+     'rtrim(ltrim(%(column)s)) as %(column)s,'),
     ('^[ \t]*(\[D[a-zA-Z0-9]+\]),$',
-     '\tdbo.f_Datetime(%(column)s) as %(column)s,'),
+     'dbo.f_Datetime(%(column)s) as %(column)s,'),
     ('^[ \t]*(\[F[a-zA-Z0-9]+\]),$',
-     '\tCASE WHEN %(column)s = \'Y\' THEN 1 ELSE 0 END as %(column)s,'),
+     'CASE WHEN %(column)s = \'Y\' THEN 1 ELSE 0 END as %(column)s,'),
 ]
 
 
@@ -322,4 +312,6 @@ if __name__ == '__main__':
         changer.createDWView()
     elif sys.argv[1] == '2':
         changer.generateFiles()
+    elif sys.argv[1] == '3':
+        changer.parseODSTable(changer._files[0])
 
