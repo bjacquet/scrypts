@@ -10,10 +10,10 @@ Author & Date:
 	Bruno Jacquet 02.2009
 */
 if OBJECT_ID('dbo.f_Split', 'FN') is not null
-	drop function f_Split
+	drop function dbo.f_Split
 go
 
-CREATE FUNCTION f_Split
+CREATE FUNCTION dbo.f_Split
 (
  @Keyword VARCHAR(8000),
  @Delimiter VARCHAR(255)
