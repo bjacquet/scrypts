@@ -20,6 +20,7 @@ class Ods2Dw(object):
         self._DWViewTemplate = self._config.get('Template', 'dwview')
         self._DWTableTemplate = self._config.get('Template', 'dwtable')
         self._SP_PopulateDWTTemplate = self._config.get('Template', 'dwsp')
+        self._TR_PopulateDWHTemplate = self._config.get('Template', 'dwtr')
 
     def _get_dw_columns(self):
         if self._ods_columns != '':
@@ -270,6 +271,28 @@ class Ods2Dw(object):
             fdv.write(newview)
             fdv.close()
 
+    def createDWTrigger(self):
+        dwh_columns = ''
+        for column in self._dw_columns.splitlines():
+            for change in dwh_change:
+                if change[0].search(column):
+                    column = re.sub(change[1], change[2], column)
+                    break
+            dwh_columns += column + '\n'
+
+        table_number = self._table_name[:3]
+        historic_table_name = '%sHM_%s' % (table_number, self._table_name[4:])
+        dwTemplate = open(self._TR_PopulateDWHTemplate, 'r').read()
+        dwhfilename = self._config.get('Filename', 'dwtr', 1)
+        newtrigger = dwTemplate % {'table_name': self._table_name,
+                                   'table_number': table_number,
+                                   'historic_table_name': historic_table_name,
+                                   'dw_columns': self._dw_columns,
+                                   'dwh_columns' : dwh_columns}
+        fd = open(dwhfilename % (table_number, table_number), 'w')
+        fd.write(newtrigger)
+        fd.close()
+                
 
 odstablename = r"CREATE TABLE \[ods\]\.\[ODST([0-9]{3}\_[a-zA-Z0-9]+)\]"
 odscolumns = r"\t?(\[([CDFGIV][a-z0-9]+|S[A-Z0-9]+)\]).* NULL"
@@ -292,7 +315,6 @@ ods2dw_changes = [
      '\t,[Dbatchdate] [datetime] NULL\n) ON'),
 ]
 
-
 dw_insert = [
     ('^[ \t]*(\[G[a-zA-Z0-9]+\]),$',
      'rtrim(ltrim(%(column)s)) as %(column)s,'),
@@ -300,6 +322,12 @@ dw_insert = [
      'dbo.f_Datetime(%(column)s) as %(column)s,'),
     ('^[ \t]*(\[F[a-zA-Z0-9]+\]),$',
      'CASE WHEN %(column)s = \'Y\' THEN 1 ELSE 0 END as %(column)s,'),
+]
+
+dwh_change = [
+    (re.compile('\[?Dbatchdate\]?'),
+     '\[Dbatchdate\]',
+     'dbo.f_GetMonth((select Dbatchdate from dw.DWT000_SP))')
 ]
 
 
@@ -314,4 +342,4 @@ if __name__ == '__main__':
         changer.generateFiles()
     elif sys.argv[1] == '3':
         changer.parseODSTable(changer._files[0])
-
+        changer.createDWTrigger()
