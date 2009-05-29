@@ -17,7 +17,6 @@ class Ods2Dw(object):
             self.addRules(rules)
 
         self._ODSViewTemplate = self._config.get('Template', 'odsview')
-        self._DWViewTemplate = self._config.get('Template', 'dwview')
         self._DWTableTemplate = self._config.get('Template', 'dwtable')
         self._SP_PopulateDWTTemplate = self._config.get('Template', 'dwsp')
         self._TR_PopulateDWHTemplate = self._config.get('Template', 'dwtr')
@@ -62,7 +61,6 @@ class Ods2Dw(object):
             self.createODSView_2()
             self.createDWTable_2()
             self.createSP_PopulateDWTable_2()
-            self.createDWView_2()
 
     def parseODSTable(self, file):
         fd = open(file, 'r')
@@ -234,42 +232,6 @@ class Ods2Dw(object):
             fdsp = open(spdwfilename % (self._table_name), 'w')
             fdsp.write(sp)
             fdsp.close()
-
-    def createDWView_2(self):
-        dwTemplate = open(self._DWViewTemplate, 'r').read()
-        dwvfilename = self._config.get('Filename', 'dwview', 1)
-        newview = dwTemplate % {'tablename': self._table_name,
-                                'columns': self._ods_columns[:-1]}
-        fd = open(dwvfilename % (self._table_name), 'w')
-        fd.write(newview)
-        fd.close()
-
-    def createDWView(self):
-        dwTemplate = open(self._DWViewTemplate, 'r').read()
-        dwvfilename = self._config.get('Filename', 'dwview', 1)
-        
-        for file in self._files:
-            fd = open(file, 'r')
-            matchTable = None
-            matchColumn = None
-            for line in fd.readlines():
-                if matchTable == None: # found table name
-                    matchTable = re.match(odstablename, line)
-                else: # searching for columns
-                    matchColumn = re.match(odscolumns, line)
-                    if matchColumn != None: # found column
-                        self._ods_columns = self._ods_columns + '\t' \
-                            + matchColumn.group(1) + ',\n'
-                    else: # no more columns
-                        break
-
-            self._table_name = matchTable.group(1)
-            fd.close()
-            newview = dwTemplate % {'tablename': self._table_name,
-                                    'columns': self._ods_columns}
-            fdv = open(dwvfilename % (self._table_name), 'w')
-            fdv.write(newview)
-            fdv.close()
 
     def createDWTrigger(self):
         dwh_columns = ''
