@@ -20,6 +20,8 @@ class Ods2Dw(object):
         self._DWTableTemplate = self._config.get('Template', 'dwtable')
         self._SP_PopulateDWTTemplate = self._config.get('Template', 'dwsp')
         self._TR_PopulateDWHTemplate = self._config.get('Template', 'dwtr')
+        self._DWHMTableTemplate = self._config.get('Template', 'dwhmtable')
+        self._SP_ManagePartTemplate = self._config.get('Template', 'dwmngpart')
 
     def _get_dw_columns(self):
         if self._ods_columns != '':
@@ -82,6 +84,9 @@ class Ods2Dw(object):
                     break
 
         self._table_name = matchTable.group(1)
+        self._table_number = self._table_name[:3]
+        self._historic_table_name = '%sHM_%s' %(self._table_number, 
+                                                self._table_name[4:])
         fd.close()
 
     def createODSView_2(self):
@@ -242,19 +247,44 @@ class Ods2Dw(object):
                     break
             dwh_columns += column + '\n'
 
-        table_number = self._table_name[:3]
-        historic_table_name = '%sHM_%s' % (table_number, self._table_name[4:])
         dwTemplate = open(self._TR_PopulateDWHTemplate, 'r').read()
         dwhfilename = self._config.get('Filename', 'dwtr', 1)
         newtrigger = dwTemplate % {'table_name': self._table_name,
-                                   'table_number': table_number,
-                                   'historic_table_name': historic_table_name,
+                                   'table_number': self._table_number,
+                                   'historic_table_name':
+                                       self._historic_table_name,
                                    'dw_columns': self._dw_columns,
                                    'dwh_columns' : dwh_columns}
-        fd = open(dwhfilename % (table_number, table_number), 'w')
+        fd = open(dwhfilename % (self._table_number, self._table_number), 'w')
         fd.write(newtrigger)
         fd.close()
-                
+
+    def createDWHMTable(self):
+        newcolumns = ''
+        for column in self._ods_col_descr:
+            for rule in self._rules:
+                if rule[0].search(column):
+                    column = re.sub(rule[1], rule[2], column)
+                    break
+            newcolumns += column
+
+        dwTemplate = open(self._DWHMTableTemplate, 'r').read() 
+        dwtfilename = self._config.get('Filename', 'dwhmtable', 1)
+        newtable = dwTemplate % {'historic_table_name':
+                                     self._historic_table_name,
+                                 'columns': newcolumns[:-1]}
+        fd = open(dwtfilename % (self._historic_table_name), 'w')
+        fd.write(newtable)
+        fd.close()
+
+    def createSP_ManagePartition(self):
+        dwTemplate = open(self._SP_ManagePartTemplate, 'r').read()
+        dwfilename = self._config.get('Filename', 'dwmngpart', 1)
+        newsp = dwTemplate % {'table_number': self._table_number,
+                              'table_name': self._table_name[4:]}
+        fd = open(dwfilename % (self._table_number), 'w')
+        fd.write(newsp)
+        fd.close()
 
 odstablename = r"CREATE TABLE \[ods\]\.\[ODST([0-9]{3}\_[a-zA-Z0-9]+)\]"
 odscolumns = r"\t?(\[([CDFGIV][a-z0-9]+|S[A-Z0-9]+)\]).* NULL"
@@ -304,4 +334,6 @@ if __name__ == '__main__':
         changer.generateFiles()
     elif sys.argv[1] == '3':
         changer.parseODSTable(changer._files[0])
+        changer.createDWHMTable()
         changer.createDWTrigger()
+        changer.createSP_ManagePartition()
