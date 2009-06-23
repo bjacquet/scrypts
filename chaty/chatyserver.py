@@ -18,6 +18,7 @@
 #
 
 import socket
+import SocketServer
 
 class MirrorServer:
     """Receives text on a line-by-line basis and sends back a reversion of the
@@ -50,14 +51,32 @@ class MirrorServer:
                 pass
 
 
+class RequestHandler(SocketServer.StreamRequestHandler):
+    """Handles one request to mirror a message"""
+
+    def handle(self):
+        """Read from StreamRequestHandler's provided rfile member, which 
+        contains the input from the client. Mirror the text and write it to 
+        the wfile member, which contains the output to be sent to the client."""
+        line = True
+        while line:
+            line = self.rfile.readline().strip()
+            if line:
+                self.wfile.write(line[::-1] + '\n')
+
+
 if __name__=='__main__':
     import sys
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 4:
         print 'Usage: %s [server type] [hostname] [port number]' % sys.argv[0]
         sys.exit(1)
-
+    hostname = sys.argv[2]
+    port = int(sys.argv[3])
+        
     if sys.argv[1] == '1':
-        hostname = sys.argv[2]
-        port = int(sys.argv[3])
         MirrorServer((hostname, port)).run()
-
+    elif sys.argv[1] == '2':
+        SocketServer.TCPServer((hostname, port), RequestHandler).serve_forever()
+    elif sys.argv[1] == '3':
+        server=SocketServer.ThreadingTCPServer((hostname, port), RequestHandler)
+        server.serve_forever()
