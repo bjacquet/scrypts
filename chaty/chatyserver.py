@@ -20,6 +20,9 @@
 import socket
 import SocketServer
 
+from mirrorrequesthandler import MirrorRequestHandler
+from chatyrequesthandler import ChatyRequestHandler
+
 class MirrorServer:
     """Receives text on a line-by-line basis and sends back a reversion of the
     same text."""
@@ -51,18 +54,19 @@ class MirrorServer:
                 pass
 
 
-class RequestHandler(SocketServer.StreamRequestHandler):
-    """Handles one request to mirror a message"""
+class ChatyServer(SocketServer.ThreadingTCPServer):
+    """The server class."""
 
-    def handle(self):
-        """Read from StreamRequestHandler's provided rfile member, which 
-        contains the input from the client. Mirror the text and write it to 
-        the wfile member, which contains the output to be sent to the client."""
-        line = True
-        while line:
-            line = self.rfile.readline().strip()
-            if line:
-                self.wfile.write(line[::-1] + '\n')
+    def __init__(self, server_address, RequestHandlerClass):
+        SocketServer.ThreadingTCPServer.__init__(self, server_address, 
+                                                 RequestHandlerClass)
+        self._users = dict()
+        self._rooms = dict()
+
+
+    def delete_user(self, user):
+        if self._users.get(user):
+            del(self._users[user])
 
 
 if __name__=='__main__':
@@ -78,5 +82,8 @@ if __name__=='__main__':
     elif sys.argv[1] == '2':
         SocketServer.TCPServer((hostname, port), RequestHandler).serve_forever()
     elif sys.argv[1] == '3':
-        server=SocketServer.ThreadingTCPServer((hostname, port), RequestHandler)
+        server=SocketServer.ThreadingTCPServer((hostname, port), 
+                                               MirrorRequestHandler)
         server.serve_forever()
+    elif sys.argv[1] == '4':
+        ChatyServer((hostname, port), ChatyRequestHandler).serve_forever()
