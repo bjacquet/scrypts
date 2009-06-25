@@ -21,39 +21,7 @@ import socket
 import SocketServer
 
 from chatyrequesthandler import ChatyRequestHandler
-from mirrorrequesthandler import MirrorRequestHandler
 from threading import Thread
-
-
-class MirrorServer:
-    """Receives text on a line-by-line basis and sends back a reversion of the
-    same text."""
-
-    def __init__(self, port):
-        """Binds the server to the giben port."""
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.socket.bind(port)
-        self.socket.listen(5)
-
-    def run(self):
-        """Handles incoming requests."""
-        while True:
-            request, client_address = self.socket.accept()
-            input = request.makefile('rb', 0)
-            output = request.makefile('wb', 0)
-            line = True
-            try:
-                while line:
-                    line = input.readline().strip()
-                    if line:
-                        output.write(line[::-1] + '\r\n')
-                    else:
-                        #A blank line terminates the connection.
-                        request.shutdown(2) #Shut down both reads and writes.
-            except socket.error:
-                #Client disconnected.
-                pass
 
 
 class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
@@ -71,32 +39,33 @@ class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
         self.serve_forever()
 
     def delete_user(self, user):
-        if self._users.get(user):
+        if user in self._users:
             del(self._users[user])
 
         for room in self._rooms:
-            if self._rooms[room].__contains__(user):
+            if user in self._rooms[room]:
                 self.part_room(user, room)
 
     def add_user(self, user, wfile):
-        if self._users.get(user):
+        if user in self._users:
             return False
         self._users[user] = wfile
         return True
 
     def join_room(self, user, room):
-        if self._rooms.get(room):
+        if room in self._rooms:
             self._rooms[room].append(user)
         else:
             self._rooms[room] = [user]
 
     def part_room(self, user, room):
-        if self._rooms[room].__contains__(user):
+        if user in self._rooms[room]:
             self._rooms[room].remove(user)
+            if len(self._rooms[room]) == 0:
+                del(self._rooms[room])
 
     def msg_room(self, from_user, to_room, msg):
-        if not self._rooms.get(to_room) or \
-                not self._rooms[to_room].__contains__(from_user):
+        if to_room not in self._rooms or from_user not in self._rooms[to_room]:
             return False
 
         message = 'GOTROOMMSG %(username)s %(chatroom)s %(message)s\r\n' % \
@@ -112,7 +81,7 @@ class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
         return True
 
     def msg_user(self, from_user, to_user, msg):
-        if not self._users.get(to_user):
+        if to_user not in self._users:
             return False
 
         message = 'GOTUSERMSG %(username)s %(message)s\r\n' % \
@@ -126,27 +95,18 @@ class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
 
 if __name__=='__main__':
     import sys
-    if len(sys.argv) < 4:
-        print 'Usage: %s [server type] [hostname] [port number]' % sys.argv[0]
+    if len(sys.argv) < 3:
+        print 'Usage: %s [hostname] [port number]' % sys.argv[0]
         sys.exit(1)
-    hostname = sys.argv[2]
-    port = int(sys.argv[3])
+    hostname = sys.argv[1]
+    port = int(sys.argv[2])
 
-    if sys.argv[1] == '1':
-        MirrorServer((hostname, port)).run()
-    elif sys.argv[1] == '2':
-        SocketServer.TCPServer((hostname, port), RequestHandler).serve_forever()
-    elif sys.argv[1] == '3':
-        server=SocketServer.ThreadingTCPServer((hostname, port),
-                                               MirrorRequestHandler)
-        server.serve_forever()
-    elif sys.argv[1] == '4':
-        server = ChatyServer((hostname, port), ChatyRequestHandler)
-        server.start()
+    server = ChatyServer((hostname, port), ChatyRequestHandler)
+    server.start()
 
-        done = False
-        while not done:
-            command = sys.stdin.readline().strip()
-            if command == 'quit':
-                done = True
-                sys.exit(1)
+    done = False
+    while not done:
+        command = sys.stdin.readline().strip()
+        if command == 'quit':
+            done = True
+            sys.exit(1)

@@ -21,36 +21,6 @@ import socket
 from threading import Thread
 
 
-class MirrorClient:
-    """A client for the mirror server."""
-
-    def __init__(self, server, port):
-        """Connect to the giver server."""
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((server, port))
-
-    def mirror(self, string):
-        """Sends the given string to the server, and prints the response."""
-        if string[-1] != '\n':
-            string += '\r\n'
-        self.socket.send(string)
-
-        #Read server response
-        buf = []
-        input = ''
-        while not '\n' in input:
-            try:
-                input = self.socket.recv(1024)
-                buf.append(input)
-            except socket.error:
-                break
-        return ''.join(buf)[:-1]
-
-    def close(self):
-        self.socket.send('\r\n') #Close the connection
-        self.socket.close()
-
-
 class ChatyClient:
     """A client for the ChatyServer"""
 
@@ -93,26 +63,12 @@ interpreter needs to quit it won't be held up waiting for this thread to die."""
 
 if __name__=='__main__':
     import sys
-    if sys.argv[1] == '1':
-        if len(sys.argv) <  5:
-            print 'Usage: %s [client type] [host] [port] [message]' % sys.argv[0]
-            sys.exit(1)
 
-        hostname = sys.argv[2]
-        port = int(sys.argv[3])
-        message = sys.argv[4]
-
-        m = MirrorClient(hostname, port)
-        print m.mirror(message)
-        m.close()
+    if len(sys.argv) != 3:
+        print 'Usage: %s [host] [port]' % sys.argv[0]
         sys.exit(1)
 
-    elif sys.argv[1] == '2':
-        if len(sys.argv) != 4:
-            print 'Usage: %s [client type] [host] [port]' % sys.argv[0]
-            sys.exit(1)
+    hostname = sys.argv[1]
+    port = int(sys.argv[2])
 
-        hostname = sys.argv[2]
-        port = int(sys.argv[3])
-
-        ChatyClient(hostname, port)
+    ChatyClient(hostname, port)

@@ -75,6 +75,7 @@ implemented command returns the corresponding method and its arguments..
             commandMethod = getattr(self, command, None)
             if not commandMethod:
                 raise ClientError, 'ERROR command %s unknown\r\n' % command
+            self._checkNickname(command)
         return commandMethod, arg
 
     def _privateMessage(self, message):
@@ -85,16 +86,23 @@ implemented command returns the corresponding method and its arguments..
         """Reads the client input."""
         return self.rfile.readline().strip()
 
+    def _checkNickname(self, command):
+        """Forces the client to login before any other command, except 
+logout."""
+        if command not in ['login', 'logout'] and self.nickname is None:
+            raise ClientError, 'ERROR you must login first\r\n'
+        
+
     def logout(self, arg=None):
         """Client disconnecting.
 Makes handle() to terminate."""
         self.server.delete_user(self.nickname)
         return True
 
-    def login(self, arg=None):
+    def login(self, arg=[]):
         """Nickname registration."""
         nickname = arg[0]
-        if nickname is None:
+        if nickname == []:
             raise ClientError, 'ERROR no nickname given\r\n'
 
         if not self.server.add_user(nickname, self.wfile):
@@ -102,23 +110,23 @@ Makes handle() to terminate."""
 
         self.nickname = nickname
 
-    def join(self, arg=None):
+    def join(self, arg=[]):
         """Join chatroom."""
-        if arg is None or len(arg[0]) < 2 or arg[0][0] != '#':
+        if arg == [] or len(arg[0]) < 2 or arg[0][0] != '#':
             raise ClientError, 'ERROR chatroom name invalid\r\n'
 
         self.server.join_room(self.nickname, arg[0])
 
-    def part(self, arg=None):
+    def part(self, arg=[]):
         """Leave chatroom."""
-        if arg is None or len(arg[0]) < 2 or arg[0][0] != '#':
+        if arg == [] or len(arg[0]) < 2 or arg[0][0] != '#':
             raise ClientError, 'ERROR chatroom name invalid\r\n'
 
         self.server.part_room(self.nickname, arg[0])
 
-    def msg(self, arg=None):
+    def msg(self, arg=[]):
         """Message from client to client/chatroom."""
-        if arg is None or len(arg) < 2:
+        if arg == [] or len(arg) < 2:
             raise ClientError, 'ERROR no message to send\r\n'
 
         user_or_room, msg = arg
