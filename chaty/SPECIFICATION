@@ -43,14 +43,6 @@ the appropriate client:
 
         GOTROOMMSG <sender> #<chatroom> <message-text><CRLF>
 
-
-
-
-
-
-
-
-
     or if the message is sent directly from one user to another:
 
         GOTUSERMSG <sender> <message-text><CRLF>

@@ -21,7 +21,6 @@ import socket
 import SocketServer
 
 
-
 class ClientError(Exception):
     """An exception thrown because the client gave bad input to the server."""
     pass
@@ -34,7 +33,7 @@ class ChatyRequestHandler(SocketServer.StreamRequestHandler):
         """Handles the client connection."""
 
         self.nickname = None
-        
+
         done = False
         while not done:
             try:
@@ -46,7 +45,7 @@ class ChatyRequestHandler(SocketServer.StreamRequestHandler):
 
 
     def finish(self):
-        """Removes the client from the server list and terminates the 
+        """Removes the client from the server list and terminates the
 connection. Called automatically when handle() returns."""
         self.server.delete_user(self.nickname)
         self.request.shutdown(2)
@@ -55,10 +54,11 @@ connection. Called automatically when handle() returns."""
     def _processInput(self):
         """Reads a line from the client input and acts according."""
         done = False
-        line = self._readline()
+        line = self._readline().strip()
         command, arg = self._parseCommand(line)
         if command:
             done = command(arg)
+            self._privateMessage('OK\r\n')
         else:
             print 'some kind of error'
         return done
@@ -70,7 +70,7 @@ implemented command returns the corresponding method and its arguments..
         commandMethod, arg = None, None
         if input:
             command_and_arg = input.split(' ', 2)
-            command = command_and_arg[0]
+            command = command_and_arg[0].lower()
             arg = command_and_arg[1:]
             commandMethod = getattr(self, command, None)
             if not commandMethod:
@@ -83,7 +83,53 @@ implemented command returns the corresponding method and its arguments..
 
     def _readline(self):
         """Reads the client input."""
-        return self.rfile.readline()
+        return self.rfile.readline().strip()
+
+    def logout(self, arg=None):
+        """Client disconnecting.
+Makes handle() to terminate."""
+        self.server.delete_user(self.nickname)
+        return True
+
+    def login(self, arg=None):
+        """Nickname registration."""
+        nickname = arg[0]
+        if nickname is None:
+            raise ClientError, 'ERROR no nickname given\r\n'
+
+        if not self.server.add_user(nickname, self.wfile):
+            raise ClientError, 'ERROR nickname already in use\r\n'
+
+        self.nickname = nickname
+
+    def join(self, arg=None):
+        """Join chatroom."""
+        if arg is None or len(arg[0]) < 2 or arg[0][0] != '#':
+            raise ClientError, 'ERROR chatroom name invalid\r\n'
+
+        self.server.join_room(self.nickname, arg[0])
+
+    def part(self, arg=None):
+        """Leave chatroom."""
+        if arg is None or len(arg[0]) < 2 or arg[0][0] != '#':
+            raise ClientError, 'ERROR chatroom name invalid\r\n'
+
+        self.server.part_room(self.nickname, arg[0])
+
+    def msg(self, arg=None):
+        """Message from client to client/chatroom."""
+        if arg is None or len(arg) < 2:
+            raise ClientError, 'ERROR no message to send\r\n'
+
+        user_or_room, msg = arg
+
+        if user_or_room[0] == '#':
+            if not self.server.msg_room(self.nickname, user_or_room, msg):
+                raise ClientError, 'ERROR user not in chatroom\r\n'
+        else:
+            if not self.server.msg_user(self.nickname, user_or_room, msg):
+                raise ClientError, 'ERROR user not connected\r\n'
+
 
 if __name__=='__main__':
     pass
