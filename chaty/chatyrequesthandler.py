@@ -101,10 +101,10 @@ Makes handle() to terminate."""
 
     def login(self, arg=[]):
         """Nickname registration."""
-        nickname = arg[0]
-        if nickname == []:
+        if arg == []:
             raise ClientError, 'ERROR no nickname given\r\n'
 
+        nickname = arg[0]
         if not self.server.add_user(nickname, self.wfile):
             raise ClientError, 'ERROR nickname already in use\r\n'
 

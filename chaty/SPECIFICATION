@@ -11,7 +11,6 @@ protocol:
 
         ERROR <reason><CRLF>
 
-
     <CRLF> indicates the bytes '\r\n'.
 
     Upon connecting to the server, the client sends:
@@ -32,7 +31,6 @@ begin with the character '#') by doing:
     Clients can send a message to a chatroom:
 
         MSG #<chatroom> <message-text><CRLF>
-
 
     Clients can send a message to another user:
 
@@ -91,4 +89,3 @@ the server should deal with this case gracefully. Please do not use an
 existing networking framework (e.g., Twisted or asyncore for Python, ACE for 
 C++, etc.) to implement the server. The server should support running on 
 Linux. 
-

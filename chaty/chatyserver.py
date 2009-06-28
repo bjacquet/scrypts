@@ -38,6 +38,15 @@ class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
     def run(self):
         self.serve_forever()
 
+    def _clear_empty_rooms(self):
+        emptyRooms = list()
+        for room in self._rooms:
+            if len(self._rooms[room]) == 0:
+                emptyRooms.append(room)
+
+        for room in emptyRooms:
+            del(self._rooms[room])
+
     def delete_user(self, user):
         if user in self._users:
             del(self._users[user])
@@ -45,6 +54,8 @@ class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
         for room in self._rooms:
             if user in self._rooms[room]:
                 self.part_room(user, room)
+
+        self._clear_empty_rooms()
 
     def add_user(self, user, wfile):
         if user in self._users:
@@ -61,8 +72,6 @@ class ChatyServer(SocketServer.ThreadingTCPServer, Thread):
     def part_room(self, user, room):
         if user in self._rooms[room]:
             self._rooms[room].remove(user)
-            if len(self._rooms[room]) == 0:
-                del(self._rooms[room])
 
     def msg_room(self, from_user, to_room, msg):
         if to_room not in self._rooms or from_user not in self._rooms[to_room]:
