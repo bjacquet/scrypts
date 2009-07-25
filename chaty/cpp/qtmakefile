@@ -1,0 +1,4 @@
+CONFIG += qt
+TARGET = chatyserver
+SOURCES += chatyserver.cpp
+QT += network

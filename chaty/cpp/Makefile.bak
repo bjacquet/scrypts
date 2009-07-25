@@ -1,0 +1,16 @@
+chatyserver.o: chatyserver.cpp
+	g++ -g -Wall -ansi -pedantic -c $<
+
+chatyserver: chatyserver.o
+	g++  -lpthread -o $@ $<
+
+chatyclient.o: chatyclient.cpp
+	g++ -g -Wall -ansi -pedantic -c $<
+
+chatyclient: chatyclient.o
+	g++ -lpthread -o $@ $<
+
+all: chatyclient chatyserver
+
+clean:
+	rm *.o chatyclient chatyserver
